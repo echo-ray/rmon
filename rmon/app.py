@@ -1,5 +1,28 @@
-import urllib
-from rmon.app import create_app
-from rmon.models import db
+import os
+from flask import Flask
 
-app = create_app()
+from rmon.views import api
+from rmon.models import db
+from rmon.config import DevConfig, ProductConfig
+
+def create_app():
+    app = Flask('rmon')
+
+    env = os.environ.get('RMON_ENV')
+
+    if env in ('pro', 'prod', 'production'):
+        app.config.from_object(ProductionConfig)
+    else:
+        app.config.from_object(DevConfig)
+
+    app.config.from_envvar('RMON_SETINGS', silent=True)
+
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+    app.register_blueprint(api)
+
+    db.init_app(app)
+
+    if app.debug:
+        db.create_all()
+    return app
